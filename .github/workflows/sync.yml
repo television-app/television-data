@@ -1,0 +1,35 @@
+﻿name: Sync & Encrypt Playlist Data
+
+on:
+  schedule:
+    # Run every 6 hours automatically
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install requests pycryptodome
+
+      - name: Run sync script
+        run: |
+          python sync_data.py
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add playlist.json vod.json
+          git diff-index --quiet HEAD || git commit -m "Auto-sync encrypted channels data [skip ci]"
+          git push
