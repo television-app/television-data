@@ -48,9 +48,11 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git fetch origin main
+          git reset --soft origin/main
           git add playlist.json vod.json
           git diff-index --quiet HEAD || git commit -m "Auto-sync encrypted channels data [skip ci]"
-          git pull --rebase origin main || true
-          git push origin main
+          git push origin main || (git pull --rebase -X theirs origin main && git push origin main)
+
 
 
