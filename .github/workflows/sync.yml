@@ -50,5 +50,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add playlist.json vod.json
           git diff-index --quiet HEAD || git commit -m "Auto-sync encrypted channels data [skip ci]"
-          git push
+          git pull --rebase origin main || true
+          git push origin main
+
 
