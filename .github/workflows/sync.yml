@@ -6,6 +6,7 @@ on:
     - cron: '0 */6 * * *'
   workflow_dispatch:
   repository_dispatch:
+    types: [playlist_sync, update_playlist, sync, sync_data, webhook, trigger, default]
 
 
 permissions:
