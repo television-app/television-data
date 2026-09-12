@@ -5,6 +5,8 @@ on:
     # Run every 6 hours automatically
     - cron: '0 */6 * * *'
   workflow_dispatch:
+  repository_dispatch:
+
 
 permissions:
   contents: write
