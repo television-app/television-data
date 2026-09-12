@@ -35,6 +35,14 @@ jobs:
         run: |
           python sync_data.py
 
+      - name: Deploy to Cloudflare KV
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 9078c953f7422123122e0d22ee1b159a
+        run: |
+          npx wrangler kv key put --remote --namespace-id 7d8c7fcfee7b4c98b8e041de879abbb8 "playlist.json" --path "playlist.json" || true
+
       - name: Commit and push if changed
         run: |
           git config --local user.email "action@github.com"
@@ -42,3 +50,4 @@ jobs:
           git add playlist.json vod.json
           git diff-index --quiet HEAD || git commit -m "Auto-sync encrypted channels data [skip ci]"
           git push
+
