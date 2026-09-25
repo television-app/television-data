@@ -1,0 +1,28 @@
+name: Auto Sync Toffee Tokens (Public Unlimited)
+
+on:
+  schedule:
+    # Run every 15 minutes reliably on Public Repo (100% UNLIMITED minutes)
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sync_toffee.mjs'
+      - '.github/workflows/toffee_sync.yml'
+
+jobs:
+  sync-toffee:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Toffee Sync Script
+        run: node sync_toffee.mjs
