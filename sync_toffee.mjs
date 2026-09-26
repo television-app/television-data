@@ -1,37 +1,40 @@
 const TURSO_URL = "https://television-db-nmalifkhan.aws-ap-south-1.turso.io/v2/pipeline";
 const TURSO_TOKEN = process.env.TURSO_TOKEN;
 
+const SOURCE_1_URL = process.env.SOURCE_1_URL;
+const SOURCE_2_URL = process.env.SOURCE_2_URL;
+
 async function fetchToffeeChannels() {
     let channels = [];
     let fallbackToken = null;
 
-    // Source 1: srhady/toffee-bd
-    try {
-        console.log("Fetching Toffee channels from Source 1 (srhady)...");
-        // FIX GAP 1: Proper timeout using AbortSignal for Node.js fetch
-        const res = await fetch('https://raw.githubusercontent.com/srhady/toffee-bd/refs/heads/main/toffee_playlist.json', { 
-            signal: AbortSignal.timeout(10000) 
-        });
-        if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data.channels) && data.channels.length > 0) {
-                console.log(`Source 1 succeeded: Found ${data.channels.length} channels.`);
-                channels = data.channels.map(c => ({
-                    name: c.channel_name,
-                    url: c.stream_url
-                }));
+    // Source 1
+    if (SOURCE_1_URL) {
+        try {
+            console.log("Fetching Toffee channels from Source 1...");
+            const res = await fetch(SOURCE_1_URL, { 
+                signal: AbortSignal.timeout(10000) 
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.channels) && data.channels.length > 0) {
+                    console.log(`Source 1 succeeded: Found ${data.channels.length} channels.`);
+                    channels = data.channels.map(c => ({
+                        name: c.channel_name,
+                        url: c.stream_url
+                    }));
+                }
             }
+        } catch (e) {
+            console.warn("Source 1 fetch failed or timed out:", e.message);
         }
-    } catch (e) {
-        console.warn("Source 1 fetch failed or timed out:", e.message);
     }
 
-    // Source 2: sm-monirulislam
-    if (channels.length === 0) {
+    // Source 2
+    if (channels.length === 0 && SOURCE_2_URL) {
         try {
-            console.log("Fetching Toffee channels from Source 2 (monirul)...");
-            // FIX GAP 1: Proper timeout using AbortSignal
-            const res = await fetch('https://raw.githubusercontent.com/sm-monirulislam/Toffee-Auto-Update/main/toffee_data.json', { 
+            console.log("Fetching Toffee channels from Source 2...");
+            const res = await fetch(SOURCE_2_URL, { 
                 signal: AbortSignal.timeout(10000) 
             });
             if (res.ok) {

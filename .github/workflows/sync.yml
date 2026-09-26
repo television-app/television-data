@@ -39,6 +39,8 @@ jobs:
         continue-on-error: true
         env:
           TURSO_TOKEN: ${{ secrets.TURSO_TOKEN }}
+          SOURCE_1_URL: ${{ secrets.SOURCE_1_URL }}
+          SOURCE_2_URL: ${{ secrets.SOURCE_2_URL }}
         run: |
           node sync_toffee.mjs
 
