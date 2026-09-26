@@ -1,5 +1,5 @@
 const TURSO_URL = "https://television-db-nmalifkhan.aws-ap-south-1.turso.io/v2/pipeline";
-const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODY4MTIwNDMsImlkIjoiMDFhMDA2NGEtMDQwMS03YTU3LTkxZjYtMGU1ZTZlOWMxNjNiIiwia2lkIjoiZHduMVdVSThoakdUUlZYbHI3d0FnR1Z3WnJfaDRVU2xvY3paWERaNmdwbyIsInJpZCI6ImUzYjg3YjQ4LTExNmItNGYyZi1iNzIzLTliZWMzODdhNTZhNSJ9.6ZCMp8BlhqEXnXpTkMoreyxT6oFgVGlEMzPKysiSMBPvPFXwvG87S8UVJe5OEunquitiz_S1xA6cG7UXPyL5Dw";
+const TURSO_TOKEN = process.env.TURSO_TOKEN;
 
 async function fetchToffeeChannels() {
     let channels = [];

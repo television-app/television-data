@@ -37,10 +37,15 @@ jobs:
 
       - name: Step 1 - Refresh Toffee Live Tokens in Turso DB
         continue-on-error: true
+        env:
+          TURSO_TOKEN: ${{ secrets.TURSO_TOKEN }}
         run: |
           node sync_toffee.mjs
 
       - name: Step 2 - Encrypt & Generate playlist.json
+        env:
+          TURSO_TOKEN: ${{ secrets.TURSO_TOKEN }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
           python sync_data.py
 
