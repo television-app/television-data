@@ -1,13 +1,24 @@
+const fs = require('fs');
+
 const TURSO_URL = "https://television-db-nmalifkhan.aws-ap-south-1.turso.io/v2/pipeline";
 const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODY4MTIwNDMsImlkIjoiMDFhMDA2NGEtMDQwMS03YTU3LTkxZjYtMGU1ZTZlOWMxNjNiIiwia2lkIjoiZHduMVdVSThoakdUUlZYbHI3d0FnR1Z3WnJfaDRVU2xvY3paWERaNmdwbyIsInJpZCI6ImUzYjg3YjQ4LTExNmItNGYyZi1iNzIzLTliZWMzODdhNTZhNSJ9.6ZCMp8BlhqEXnXpTkMoreyxT6oFgVGlEMzPKysiSMBPvPFXwvG87S8UVJe5OEunquitiz_S1xA6cG7UXPyL5Dw";
 
 async function run() {
-    console.log("Fetching latest Toffee playlist from srhady/toffee-bd...");
-    const res = await fetch('https://raw.githubusercontent.com/srhady/toffee-bd/refs/heads/main/toffee_playlist.json');
-    const srhadyData = await res.json();
+    console.log("Reading toffee_tokens.json...");
+    if (!fs.existsSync('toffee_tokens.json')) {
+        console.error("toffee_tokens.json not found! Scraper might have failed.");
+        return;
+    }
     
-    const srhadyChannels = srhadyData.channels || [];
-    console.log(`Fetched ${srhadyChannels.length} channels from srhady.`);
+    const tokenData = JSON.parse(fs.readFileSync('toffee_tokens.json', 'utf8'));
+    const newToken = tokenData.cookie; // e.g. "Edge-Cache-Cookie=URLPrefix=aHR0..."
+    
+    if (!newToken) {
+        console.error("No token found in JSON.");
+        return;
+    }
+    
+    console.log("New Token loaded successfully.");
 
     console.log("Fetching Toffee channels from Turso DB...");
     const dbRes = await fetch(TURSO_URL, {
@@ -31,37 +42,34 @@ async function run() {
     console.log(`Found ${rows.length} Toffee channels in DB.`);
 
     const updates = [];
-    const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
     for (const row of rows) {
         const id = row[0].value;
         const name = row[1].value;
         const currentUrl = row[2].value;
 
-        const normalizedDbName = normalize(name);
+        // Clean up any existing tokens from the URL
+        let baseUrl = currentUrl.split('?')[0];
         
-        let matched = srhadyChannels.find(c => normalize(c.channel_name) === normalizedDbName);
+        // Append the new token
+        let newUrl = `${baseUrl}?${newToken}`;
         
-        if (!matched) {
-            matched = srhadyChannels.find(c => normalize(c.channel_name).includes(normalizedDbName) || normalizedDbName.includes(normalize(c.channel_name)));
-        }
+        // Minor fix for legacy 'edge-cache-token' param format instead of 'Edge-Cache-Cookie'
+        // Toffee player usually accepts the exact cookie value as the token param.
+        newUrl = newUrl.replace('Edge-Cache-Cookie=', 'edge-cache-token=');
 
-        if (matched && matched.stream_url && matched.stream_url !== 'N/A') {
-            if (currentUrl !== matched.stream_url) {
-                updates.push({
-                    type: 'execute',
-                    stmt: {
-                        sql: "UPDATE channels SET stream_url = ? WHERE id = ?;",
-                        args: [
-                            { type: "text", value: matched.stream_url },
-                            { type: "text", value: id }
-                        ]
-                    }
-                });
-                console.log(`[${name}] Matched with ${matched.channel_name}, queueing update...`);
-            }
-        } else {
-            console.log(`[${name}] No active match found in srhady playlist.`);
+        if (currentUrl !== newUrl) {
+            updates.push({
+                type: 'execute',
+                stmt: {
+                    sql: "UPDATE channels SET stream_url = ? WHERE id = ?;",
+                    args: [
+                        { type: "text", value: newUrl },
+                        { type: "text", value: id }
+                    ]
+                }
+            });
+            console.log(`[${name}] Token updated in queue.`);
         }
     }
 
@@ -80,9 +88,9 @@ async function run() {
             });
             console.log(`Updated batch ${Math.floor(i / BATCH_SIZE) + 1}, HTTP: ${upRes.status}`);
         }
-        console.log("Sync complete!");
+        console.log("Sync complete! Turso DB has fresh tokens.");
     } else {
-        console.log("All channels are already up-to-date. No updates required.");
+        console.log("All channels already have this token. No updates required.");
     }
 }
 
