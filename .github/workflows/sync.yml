@@ -36,6 +36,7 @@ jobs:
           pip install requests pycryptodome
 
       - name: Step 1 - Refresh Toffee Live Tokens in Turso DB
+        continue-on-error: true
         run: |
           node sync_toffee.mjs
 

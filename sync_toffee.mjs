@@ -8,7 +8,10 @@ async function fetchToffeeChannels() {
     // Source 1: srhady/toffee-bd
     try {
         console.log("Fetching Toffee channels from Source 1 (srhady)...");
-        const res = await fetch('https://raw.githubusercontent.com/srhady/toffee-bd/refs/heads/main/toffee_playlist.json', { timeout: 10000 });
+        // FIX GAP 1: Proper timeout using AbortSignal for Node.js fetch
+        const res = await fetch('https://raw.githubusercontent.com/srhady/toffee-bd/refs/heads/main/toffee_playlist.json', { 
+            signal: AbortSignal.timeout(10000) 
+        });
         if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data.channels) && data.channels.length > 0) {
@@ -20,14 +23,17 @@ async function fetchToffeeChannels() {
             }
         }
     } catch (e) {
-        console.warn("Source 1 fetch failed:", e.message);
+        console.warn("Source 1 fetch failed or timed out:", e.message);
     }
 
     // Source 2: sm-monirulislam
     if (channels.length === 0) {
         try {
             console.log("Fetching Toffee channels from Source 2 (monirul)...");
-            const res = await fetch('https://raw.githubusercontent.com/sm-monirulislam/Toffee-Auto-Update/main/toffee_data.json', { timeout: 10000 });
+            // FIX GAP 1: Proper timeout using AbortSignal
+            const res = await fetch('https://raw.githubusercontent.com/sm-monirulislam/Toffee-Auto-Update/main/toffee_data.json', { 
+                signal: AbortSignal.timeout(10000) 
+            });
             if (res.ok) {
                 const data = await res.json();
                 const list = data.response || [];
@@ -40,7 +46,7 @@ async function fetchToffeeChannels() {
                 }
             }
         } catch (e) {
-            console.warn("Source 2 fetch failed:", e.message);
+            console.warn("Source 2 fetch failed or timed out:", e.message);
         }
     }
 
@@ -63,8 +69,9 @@ async function run() {
     const { channels: remoteChannels, fallbackToken } = await fetchToffeeChannels();
 
     if (remoteChannels.length === 0 && !fallbackToken) {
-        console.error("Could not obtain any Toffee data or tokens from sources.");
-        return;
+        console.error("Could not obtain any Toffee data or tokens from sources. Preserving existing DB data.");
+        // We exit smoothly with code 0 so GitHub Actions don't crash the whole pipeline
+        return; 
     }
 
     console.log("Querying Turso DB for Toffee channels...");
@@ -151,4 +158,8 @@ async function run() {
     }
 }
 
-run().catch(console.error);
+run().catch(err => {
+    console.error("Unhandled error in sync_toffee:", err);
+    // Exit smoothly so it doesn't break the entire github actions chain
+    process.exit(0);
+});
