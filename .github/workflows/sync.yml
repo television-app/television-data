@@ -26,12 +26,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Playwright & NPM Dependencies
-        run: |
-          npm init -y || true
-          npm install playwright
-          npx playwright install --with-deps chromium
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -41,19 +35,15 @@ jobs:
         run: |
           pip install requests pycryptodome
 
-      - name: Step 1 - Extract Live Toffee Token (Headless)
-        run: |
-          node playwright_scraper.js
-
-      - name: Step 2 - Update Turso DB with Fresh Tokens
+      - name: Step 1 - Refresh Toffee Live Tokens in Turso DB
         run: |
           node sync_toffee.mjs
 
-      - name: Step 3 - Encrypt & Generate playlist.json
+      - name: Step 2 - Encrypt & Generate playlist.json
         run: |
           python sync_data.py
 
-      - name: Step 4 - Deploy to Cloudflare KV
+      - name: Step 3 - Deploy to Cloudflare KV
         continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -61,12 +51,12 @@ jobs:
         run: |
           npx wrangler kv key put --remote --namespace-id 7d8c7fcfee7b4c98b8e041de879abbb8 "playlist.json" --path "playlist.json" || true
 
-      - name: Step 5 - Commit and Push if changed
+      - name: Step 4 - Commit and Push if changed
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git fetch origin main
           git reset --soft origin/main
-          git add playwright_scraper.js sync_toffee.mjs playlist.json vod.json package.json package-lock.json toffee_tokens.json || true
-          git diff-index --quiet HEAD || git commit -m "Auto-sync with Self-Hosted Toffee Engine [skip ci]"
+          git add sync_toffee.mjs playlist.json vod.json
+          git diff-index --quiet HEAD || git commit -m "Auto-sync encrypted channels with fresh Toffee tokens [skip ci]"
           git push origin main || (git pull --rebase -X theirs origin main && git push origin main)
