@@ -38,6 +38,7 @@ jobs:
       - name: Step 1 - Refresh Toffee Live Tokens in Turso DB
         continue-on-error: true
         env:
+          TURSO_URL: ${{ secrets.TURSO_URL }}
           TURSO_TOKEN: ${{ secrets.TURSO_TOKEN }}
           SOURCE_1_URL: ${{ secrets.SOURCE_1_URL }}
           SOURCE_2_URL: ${{ secrets.SOURCE_2_URL }}
@@ -46,6 +47,7 @@ jobs:
 
       - name: Step 2 - Encrypt & Generate playlist.json
         env:
+          TURSO_URL: ${{ secrets.TURSO_URL }}
           TURSO_TOKEN: ${{ secrets.TURSO_TOKEN }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |

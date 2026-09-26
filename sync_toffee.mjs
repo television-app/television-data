@@ -1,4 +1,4 @@
-const TURSO_URL = "https://television-db-nmalifkhan.aws-ap-south-1.turso.io/v2/pipeline";
+const TURSO_URL = process.env.TURSO_URL;
 const TURSO_TOKEN = process.env.TURSO_TOKEN;
 
 const SOURCE_1_URL = process.env.SOURCE_1_URL;

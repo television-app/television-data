@@ -8,7 +8,7 @@ from Crypto.Util.Padding import pad
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-TURSO_URL = "https://television-db-nmalifkhan.aws-ap-south-1.turso.io/v2/pipeline"
+TURSO_URL = os.environ.get("TURSO_URL")
 TURSO_TOKEN = os.environ.get("TURSO_TOKEN")
 ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY")
 
