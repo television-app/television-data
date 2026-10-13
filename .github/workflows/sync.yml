@@ -45,6 +45,14 @@ jobs:
         run: |
           node sync_toffee.mjs
 
+      - name: Step 1.5 - Refresh AynaOTT Live Streams in Turso DB
+        continue-on-error: true
+        env:
+          TURSO_URL: ${{ secrets.TURSO_URL }}
+          TURSO_TOKEN: ${{ secrets.TURSO_TOKEN }}
+        run: |
+          node sync_aynaott.mjs
+
       - name: Step 2 - Encrypt & Generate playlist.json
         env:
           TURSO_URL: ${{ secrets.TURSO_URL }}
@@ -67,6 +75,6 @@ jobs:
           git config --local user.name "GitHub Action"
           git fetch origin main
           git reset --soft origin/main
-          git add sync_toffee.mjs playlist.json vod.json
-          git diff-index --quiet HEAD || git commit -m "Auto-sync encrypted channels with fresh Toffee tokens [skip ci]"
+          git add sync_toffee.mjs sync_aynaott.mjs playlist.json vod.json
+          git diff-index --quiet HEAD || git commit -m "Auto-sync encrypted channels with fresh Toffee & AynaOTT streams [skip ci]"
           git push origin main || (git pull --rebase -X theirs origin main && git push origin main)
