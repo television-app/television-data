@@ -8,48 +8,56 @@ async function fetchToffeeChannels() {
     let channels = [];
     let fallbackToken = null;
 
-    // Source 1
-    if (SOURCE_1_URL) {
+    // Source 2 (Monirul) - Primary source with active live tokens
+    const s2Url = SOURCE_2_URL || "https://raw.githubusercontent.com/sm-monirulislam/Toffee-Auto-Update/main/toffee_data.json";
+    try {
+        console.log("Fetching Toffee channels from Source 2 (Monirul Live API)...");
+        const res = await fetch(s2Url, { 
+            signal: AbortSignal.timeout(10000) 
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const list = data.response || [];
+            const valid = list
+                .filter(c => (c.link || c.stream_url) && (c.link || c.stream_url).startsWith('http') && (c.link || c.stream_url) !== 'N/A')
+                .map(c => ({
+                    name: c.name || c.channel_name,
+                    url: c.link || c.stream_url
+                }));
+            if (valid.length > 0) {
+                console.log(`Source 2 succeeded: Found ${valid.length} active live channels.`);
+                channels = valid;
+            }
+        }
+    } catch (e) {
+        console.warn("Source 2 fetch failed or timed out:", e.message);
+    }
+
+    // Source 1 (Srhady) - Fallback source with strict non-N/A filter
+    if (channels.length === 0) {
+        const s1Url = SOURCE_1_URL || "https://raw.githubusercontent.com/srhady/toffee-bd/refs/heads/main/toffee_playlist.json";
         try {
-            console.log("Fetching Toffee channels from Source 1...");
-            const res = await fetch(SOURCE_1_URL, { 
+            console.log("Fetching Toffee channels from Source 1 (Fallback)...");
+            const res = await fetch(s1Url, { 
                 signal: AbortSignal.timeout(10000) 
             });
             if (res.ok) {
                 const data = await res.json();
-                if (Array.isArray(data.channels) && data.channels.length > 0) {
-                    console.log(`Source 1 succeeded: Found ${data.channels.length} channels.`);
-                    channels = data.channels.map(c => ({
-                        name: c.channel_name,
-                        url: c.stream_url
-                    }));
+                if (Array.isArray(data.channels)) {
+                    const valid = data.channels
+                        .filter(c => c.stream_url && c.stream_url.startsWith('http') && c.stream_url !== 'N/A')
+                        .map(c => ({
+                            name: c.channel_name,
+                            url: c.stream_url
+                        }));
+                    if (valid.length > 0) {
+                        console.log(`Source 1 succeeded: Found ${valid.length} valid channels.`);
+                        channels = valid;
+                    }
                 }
             }
         } catch (e) {
             console.warn("Source 1 fetch failed or timed out:", e.message);
-        }
-    }
-
-    // Source 2
-    if (channels.length === 0 && SOURCE_2_URL) {
-        try {
-            console.log("Fetching Toffee channels from Source 2...");
-            const res = await fetch(SOURCE_2_URL, { 
-                signal: AbortSignal.timeout(10000) 
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const list = data.response || [];
-                if (list.length > 0) {
-                    console.log(`Source 2 succeeded: Found ${list.length} channels.`);
-                    channels = list.map(c => ({
-                        name: c.name || c.channel_name,
-                        url: c.link || c.stream_url
-                    }));
-                }
-            }
-        } catch (e) {
-            console.warn("Source 2 fetch failed or timed out:", e.message);
         }
     }
 
