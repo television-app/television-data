@@ -178,25 +178,33 @@ async function run() {
             });
         }
 
-        // Normalize legacy domain
-        let basePrimary = (currentUrl || '').replace('bldcmprod-cdn.toffeelive.com', 'prod-linear-media.toffeelive.com');
-        let primaryWithoutQuery = basePrimary.split('?')[0];
-        const isMaster = primaryWithoutQuery.endsWith('playlist.m3u8');
+        // Normalize legacy domain & check if primary stream is actually a Toffee stream
+        const isPrimaryToffee = currentUrl && (
+            currentUrl.includes('toffeelive.com') || 
+            currentUrl.includes('prod-linear-media') || 
+            currentUrl.includes('bldcmprod-cdn')
+        );
 
-        if (matched && matched.url && matched.url.startsWith('http')) {
-            targetUrl = matched.url.replace('bldcmprod-cdn.toffeelive.com', 'prod-linear-media.toffeelive.com');
-        } else if (primaryWithoutQuery.includes('.m3u8')) {
-            if (isMaster && fallbackToken) {
-                targetUrl = `${primaryWithoutQuery}?edge-cache-token=${fallbackToken}`;
-            } else if (!isMaster && (hdntlToken || fallbackToken)) {
-                const tok = hdntlToken || fallbackToken;
-                const param = hdntlToken ? 'hdntl' : 'edge-cache-token';
-                targetUrl = `${primaryWithoutQuery}?${param}=${tok}`;
+        if (isPrimaryToffee) {
+            let basePrimary = (currentUrl || '').replace('bldcmprod-cdn.toffeelive.com', 'prod-linear-media.toffeelive.com');
+            let primaryWithoutQuery = basePrimary.split('?')[0];
+            const isMaster = primaryWithoutQuery.endsWith('playlist.m3u8');
+
+            if (matched && matched.url && matched.url.startsWith('http')) {
+                targetUrl = matched.url.replace('bldcmprod-cdn.toffeelive.com', 'prod-linear-media.toffeelive.com');
+            } else if (primaryWithoutQuery.includes('.m3u8')) {
+                if (isMaster && fallbackToken) {
+                    targetUrl = `${primaryWithoutQuery}?edge-cache-token=${fallbackToken}`;
+                } else if (!isMaster && (hdntlToken || fallbackToken)) {
+                    const tok = hdntlToken || fallbackToken;
+                    const param = hdntlToken ? 'hdntl' : 'edge-cache-token';
+                    targetUrl = `${primaryWithoutQuery}?${param}=${tok}`;
+                }
             }
-        }
 
-        if (targetUrl !== currentUrl) {
-            modified = true;
+            if (targetUrl !== currentUrl) {
+                modified = true;
+            }
         }
 
         // Process backup URLs if any
@@ -206,6 +214,15 @@ async function run() {
             let bMod = false;
 
             for (const bUrl of bList) {
+                const isBToffee = bUrl.includes('toffeelive.com') || 
+                                  bUrl.includes('prod-linear-media') || 
+                                  bUrl.includes('bldcmprod-cdn');
+                if (!isBToffee) {
+                    // Non-Toffee backup: preserve untouched! Never append Toffee tokens to non-Toffee CDNs!
+                    newBList.push(bUrl);
+                    continue;
+                }
+
                 let cleanB = bUrl.replace('bldcmprod-cdn.toffeelive.com', 'prod-linear-media.toffeelive.com');
                 let bWithoutQuery = cleanB.split('?')[0];
                 let bIsMaster = bWithoutQuery.endsWith('playlist.m3u8');
